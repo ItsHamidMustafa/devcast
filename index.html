@@ -9,11 +9,12 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins&display=swap" rel="stylesheet">
+    <link rel="icon" href="media/Spikey.png" />
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
 
 </head>
-
+ 
 <body>
     <div class="hs-elem">
         <h1>devCast</h1>
@@ -24,36 +25,41 @@
         Enter a city name to get started
     </div>
     <div class="day-date">
-        Monday, 27th april
+        Monday, 27th april 2023
     </div>
     <div class="weather-condition">
     </div>
     <div class="temp">
     </div>
     <div class="summary hidden">
-        <div class="widget" onclick="summaryHovered()">
+        <div class="widget">
             <img src="media/wind.png" alt="ImageLoadError" class="widget-icon" />
-            <span class="wind-speed"><i>LOADING</i></span>
             <i>Wind</i>
+            <span class="wind-speed"><i>LOADING</i></span>
         </div>
         <div class="widget">
             <img src="media/humidity.png" alt="ImageLoadError" class="widget-icon" />
-            <span class="humidity"><i>LOADING</i></span>
             <i>Humidity</i>
+            <span class="humidity"><i>LOADING</i></span>
         </div>
         <div class="widget">
             <img src="media/visibility.png" alt="ImageLoadError" class="widget-icon" />
-            <span class="visibility"><i>LOADING</i></span>
             <i>Visibility</i>
+            <span class="visibility"><i>LOADING</i></span>
         </div>
         <div class="widget">
             <img src="media/pressure.png" alt="ImageLoadError" class="widget-icon" />
-            <span class="pressure"><i>LOADING</i></span>
             <i>Pressure</i>
+            <span class="pressure"><i>LOADING</i></span>
         </div>
+        <div class="widget">
+            <img src="media/feels_like.png" alt="ImageLoadError" class="widget-icon" />
+            <i>Feels like</i>
+            <span class="feels-like"><i>LOADING</i></span>
+        </div>
+
     </div>
 
-    <!-- ALERT MANAGEMENT -->
 
     <div class="alert-container"></div>
 
@@ -68,47 +74,52 @@
     let cloudyImage = 'media/cloudy.png';
     const currentDateTime = new Date();
     document.querySelector('.day-date').innerHTML = currentDateTime.toDateString();
-    const apiKeyForCoords = 'XEsCj3KtYKTVeM2BcLO2uwNRsXfDeehF';
+
+    const apiKey = "03cd4fc36e1d31bb8f1d0bc5356f5510";
+
 
     function ws_callback() {
-        // COORDS API KEY
         const cityForCoords = document.querySelector('.city-search').value;
 
-        // COORDS API CONSTRUCTION
-        const coordsApiUrl = `https://www.mapquestapi.com/geocoding/v1/address?key=${apiKeyForCoords}&location=${cityForCoords}`;
+        const coordsApiUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${cityForCoords}&appid=${apiKey}`;
         let weatherIcon = document.querySelector('.weather-icon');
         var lat;
         var lon;
-        // COORDS API
         fetch(coordsApiUrl)
             .then(response => response.json())
             .then(data => {
-                const location = data.results[0].locations[0];
-                lat = location.latLng.lat;
-                lon = location.latLng.lng;
-
-                // WEATHER API
-                const apiKey = 'e39ab5d423adec3a53cb8dd3eebafa83';
+                const location = data[0];
+                lat = location.lat;
+                lon = location.lon;
                 const apiUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
+
                 checkWeather(apiUrl);
+                const forecastApiUrl = `api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}`;
+                checkForecast(forecastApiUrl);
+
             })
             .catch(error => console.error('Error:', error));
+
+        async function checkForecast(forecastApiUrl) {
+            fetch(forecastApiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data);
+                })
+
+        }
 
         async function checkWeather(apiUrl) {
             const response = await fetch(apiUrl);
             var data = await response.json();
-            console.log(data); // --------------- WEATHER DATA ---------------
-            document.querySelector('.temp').innerHTML = `${data.main.temp.toFixed()}°`;
+            document.querySelector('.temp').innerHTML = `${data.main.temp.toFixed()}°C`;
             document.querySelector('.city').innerHTML = data.name;
             document.querySelector('.weather-condition').innerHTML = data.weather[0].main;
             document.querySelector('.wind-speed').innerHTML = `${data.wind.speed}km/h-${data.wind.deg}°`;
             document.querySelector('.humidity').innerHTML = `${data.main.humidity}%`;
             document.querySelector('.visibility').innerHTML = `${data.visibility / 1000}km`;
             document.querySelector('.pressure').innerHTML = `${data.main.pressure}mbar`;
-
-            if (data.name != cityForCoords) {
-                user_alert('city_mismatch');
-            }
+            document.querySelector('.feels-like').innerHTML = `${data.main.feels_like} °C`;
 
             if (data.weather[0].main == 'Clouds' || data.weather[0].main == 'Smoke') {
                 document.body.style.backgroundColor = '#009bb6';
@@ -126,35 +137,13 @@
         }
     }
 
-
-
     function searchWeather() {
-        if (document.querySelector('.city-search').value === '') {
-            user_alert('empty_search');
-        } else {
-            document.querySelector('.city').innerHTML = '<span>LOADING DATA...</span>'
-            ws_callback();
-            document.querySelector('.city-search').value = '';
-            document.querySelector('.summary').classList.remove('hidden');
-        }
+        
+        document.querySelector('.city').innerHTML = '<span class="col-black">LOADING DATA...</span>'
+        ws_callback();
+        document.querySelector('.city-search').value = '';
+        document.querySelector('.summary').classList.remove('hidden');
     }
-
-
-    function user_alert(msg) {
-        if (msg == 'empty_search') {
-            alertContainer.innerHTML = `<div class="alert" onclick='fade_remove ()'>Enter a city name first!<br><i>Click to remove this message</i></div>`;
-        } else if (msg == 'city_mismatch') {
-            alertContainer.innerHTML = `<div class="alert" onclick='fade_remove()'>We couldn't find that city, perhaps the closest search result is displayed!<br><i>Click to remove this message</i>`;
-        }
-    }
-
-    function fade_remove() {
-        // let toDelete = document.querySelector('.alert');
-        // toDelete.parentNode.removeChild(toDelete);
-
-        document.querySelector('.alert').classList.add('fade-out');
-    }
-
 
 </script>
 
